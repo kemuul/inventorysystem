@@ -40,7 +40,7 @@ export default function Sidebar({ active = 'Dashboard', onNavigate = () => {} })
         <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
           <Boxes size={18} className="text-primary" />
         </div>
-        <span className="font-bold text-lg text-text">InventoryPro</span>
+        <span className="font-bold text-lg text-text">Inventory Pro</span>
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
