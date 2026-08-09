@@ -28,7 +28,7 @@ export default function Topbar({ title = 'Dashboard', notificationCount = 0 }) {
         <button className="flex items-center gap-2 pl-2 border-l border-border">
           <UserCircle2 size={30} className="text-muted" />
           <div className="text-left hidden sm:block">
-            <p className="text-sm font-semibold text-text leading-tight">Kemuel Gulane</p>
+            <p className="text-sm font-semibold text-text leading-tight">Admin</p>
             <p className="text-xs text-muted leading-tight">Administrator</p>
           </div>
           <ChevronDown size={14} className="text-muted" />

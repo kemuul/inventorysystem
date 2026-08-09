@@ -13,6 +13,8 @@ const salesRoutes = require('./routes/salesRoutes');
 const profitLossRoutes = require('./routes/profitLossRoutes');
 const pricingRoutes = require('./routes/pricingRoutes');
 const marketValueRoutes = require('./routes/marketValueRoutes');
+const categoryRoutes = require('./routes/categoryRoutes');
+const supplierRoutes = require('./routes/supplierRoutes');
 
 const app = express();
 
@@ -31,6 +33,8 @@ app.use('/api/sales', salesRoutes);
 app.use('/api/profit-loss', profitLossRoutes);
 app.use('/api/pricing', pricingRoutes);
 app.use('/api/market-value', marketValueRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/api/suppliers', supplierRoutes);
 
 // ---- 404 fallback ----
 app.use((req, res) => res.status(404).json({ success: false, message: 'Route not found' }));

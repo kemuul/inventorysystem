@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ShoppingCart, DollarSign, TrendingUp, PackageX } from 'lucide-react';
 import { dashboardApi } from '../api/dashboardApi';
+import { peso } from '../utils/format';
 import StatCard from '../components/StatCard';
 import ProfitLossChart from '../components/ProfitLossChart';
 import BusinessInsights from '../components/BusinessInsights';
@@ -40,8 +41,6 @@ const DEMO = {
     { type: 'low_sales', title: 'Product Z has low sales.', detail: 'Consider a promotion or price adjustment.' }
   ]
 };
-
-const peso = (n) => `₱${Number(n).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
 
 export default function Dashboard() {
   const [summary, setSummary] = useState(DEMO.summary);
