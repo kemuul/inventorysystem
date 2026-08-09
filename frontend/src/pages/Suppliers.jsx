@@ -7,6 +7,7 @@ import TableStatusRow from '../components/TableStatusRow';
 import Modal from '../components/Modal';
 import FormField from '../components/FormField';
 import FormActions from '../components/FormActions';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 const EMPTY_FORM = { name: '', contact_person: '', phone: '', email: '', address: '' };
 
@@ -15,11 +16,16 @@ export default function Suppliers() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [isModalOpen, setModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState(null); // 'add' | 'edit' | null
+  const [editingSupplier, setEditingSupplier] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [fieldErrors, setFieldErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
 
   const loadSuppliers = async () => {
     setLoading(true);
@@ -38,16 +44,31 @@ export default function Suppliers() {
     loadSuppliers();
   }, []);
 
-  const openModal = () => {
+  const openAddModal = () => {
+    setEditingSupplier(null);
     setForm(EMPTY_FORM);
     setFieldErrors({});
     setSubmitError(null);
-    setModalOpen(true);
+    setModalMode('add');
+  };
+
+  const openEditModal = (supplier) => {
+    setEditingSupplier(supplier);
+    setForm({
+      name: supplier.name,
+      contact_person: supplier.contact_person || '',
+      phone: supplier.phone || '',
+      email: supplier.email || '',
+      address: supplier.address || ''
+    });
+    setFieldErrors({});
+    setSubmitError(null);
+    setModalMode('edit');
   };
 
   const closeModal = () => {
     if (submitting) return;
-    setModalOpen(false);
+    setModalMode(null);
   };
 
   const handleChange = (e) => {
@@ -72,20 +93,50 @@ export default function Suppliers() {
 
     setSubmitting(true);
     setSubmitError(null);
+    const payload = {
+      name: form.name.trim(),
+      contact_person: form.contact_person.trim() || null,
+      phone: form.phone.trim() || null,
+      email: form.email.trim() || null,
+      address: form.address.trim() || null
+    };
+
     try {
-      await supplierApi.create({
-        name: form.name.trim(),
-        contact_person: form.contact_person.trim() || null,
-        phone: form.phone.trim() || null,
-        email: form.email.trim() || null,
-        address: form.address.trim() || null
-      });
-      setModalOpen(false);
+      if (modalMode === 'edit') {
+        await supplierApi.update(editingSupplier.id, payload);
+      } else {
+        await supplierApi.create(payload);
+      }
+      setModalMode(null);
       await loadSuppliers();
     } catch (err) {
-      setSubmitError(err.message || 'Failed to create supplier');
+      setSubmitError(err.message || `Failed to ${modalMode === 'edit' ? 'update' : 'create'} supplier`);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const openDeleteConfirm = (supplier) => {
+    setDeleteError(null);
+    setDeleteTarget(supplier);
+  };
+
+  const closeDeleteConfirm = () => {
+    if (deleting) return;
+    setDeleteTarget(null);
+  };
+
+  const confirmDelete = async () => {
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await supplierApi.remove(deleteTarget.id);
+      setDeleteTarget(null);
+      await loadSuppliers();
+    } catch (err) {
+      setDeleteError(err.message || 'Failed to delete supplier');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -97,7 +148,7 @@ export default function Suppliers() {
         title="All Suppliers"
         subtitle={`${suppliers.length} ${suppliers.length === 1 ? 'supplier' : 'suppliers'} total`}
         addLabel="Add Supplier"
-        onAdd={openModal}
+        onAdd={openAddModal}
       />
 
       <div className="bg-card border border-border rounded-xl p-5">
@@ -140,8 +191,8 @@ export default function Suppliers() {
                   <td className="py-3 text-sm text-muted">{supplier.email || '—'}</td>
                   <td className="py-3">
                     <RowActions
-                      onEdit={() => console.log('Edit supplier', supplier.id)}
-                      onDelete={() => console.log('Delete supplier', supplier.id)}
+                      onEdit={() => openEditModal(supplier)}
+                      onDelete={() => openDeleteConfirm(supplier)}
                     />
                   </td>
                 </tr>
@@ -151,7 +202,7 @@ export default function Suppliers() {
         </table>
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={closeModal} title="Add Supplier">
+      <Modal isOpen={modalMode !== null} onClose={closeModal} title={modalMode === 'edit' ? 'Edit Supplier' : 'Add Supplier'}>
         <form onSubmit={handleSubmit} noValidate>
           <FormField
             label="Supplier Name"
@@ -192,9 +243,28 @@ export default function Suppliers() {
             onChange={handleChange}
             placeholder="Optional"
           />
-          <FormActions onCancel={closeModal} submitLabel="Add Supplier" submitting={submitting} submitError={submitError} />
+          <FormActions
+            onCancel={closeModal}
+            submitLabel={modalMode === 'edit' ? 'Save Changes' : 'Add Supplier'}
+            submitting={submitting}
+            submitError={submitError}
+          />
         </form>
       </Modal>
+
+      <ConfirmDialog
+        isOpen={deleteTarget !== null}
+        onClose={closeDeleteConfirm}
+        onConfirm={confirmDelete}
+        title="Delete Supplier"
+        message={
+          deleteTarget
+            ? `Delete "${deleteTarget.name}"? Products currently linked to this supplier won't be deleted — they'll just show as unassigned.`
+            : ''
+        }
+        submitting={deleting}
+        error={deleteError}
+      />
     </div>
   );
 }

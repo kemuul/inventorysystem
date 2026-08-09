@@ -6,6 +6,7 @@ import TableStatusRow from '../components/TableStatusRow';
 import Modal from '../components/Modal';
 import FormField from '../components/FormField';
 import FormActions from '../components/FormActions';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 const EMPTY_FORM = { name: '', description: '' };
 
@@ -14,11 +15,18 @@ export default function Categories() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [isModalOpen, setModalOpen] = useState(false);
+  // One modal handles both Add and Edit — `modalMode` decides which API
+  // call runs on submit and which record (if any) is being edited.
+  const [modalMode, setModalMode] = useState(null); // 'add' | 'edit' | null
+  const [editingCategory, setEditingCategory] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [fieldErrors, setFieldErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
 
   const loadCategories = async () => {
     setLoading(true);
@@ -37,16 +45,25 @@ export default function Categories() {
     loadCategories();
   }, []);
 
-  const openModal = () => {
+  const openAddModal = () => {
+    setEditingCategory(null);
     setForm(EMPTY_FORM);
     setFieldErrors({});
     setSubmitError(null);
-    setModalOpen(true);
+    setModalMode('add');
+  };
+
+  const openEditModal = (category) => {
+    setEditingCategory(category);
+    setForm({ name: category.name, description: category.description || '' });
+    setFieldErrors({});
+    setSubmitError(null);
+    setModalMode('edit');
   };
 
   const closeModal = () => {
-    if (submitting) return; // don't let the modal close mid-save
-    setModalOpen(false);
+    if (submitting) return;
+    setModalMode(null);
   };
 
   const handleChange = (e) => {
@@ -68,14 +85,44 @@ export default function Categories() {
 
     setSubmitting(true);
     setSubmitError(null);
+    const payload = { name: form.name.trim(), description: form.description.trim() || null };
+
     try {
-      await categoryApi.create({ name: form.name.trim(), description: form.description.trim() || null });
-      setModalOpen(false);
+      if (modalMode === 'edit') {
+        await categoryApi.update(editingCategory.id, payload);
+      } else {
+        await categoryApi.create(payload);
+      }
+      setModalMode(null);
       await loadCategories();
     } catch (err) {
-      setSubmitError(err.message || 'Failed to create category');
+      setSubmitError(err.message || `Failed to ${modalMode === 'edit' ? 'update' : 'create'} category`);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const openDeleteConfirm = (category) => {
+    setDeleteError(null);
+    setDeleteTarget(category);
+  };
+
+  const closeDeleteConfirm = () => {
+    if (deleting) return;
+    setDeleteTarget(null);
+  };
+
+  const confirmDelete = async () => {
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await categoryApi.remove(deleteTarget.id);
+      setDeleteTarget(null);
+      await loadCategories();
+    } catch (err) {
+      setDeleteError(err.message || 'Failed to delete category');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -87,7 +134,7 @@ export default function Categories() {
         title="All Categories"
         subtitle={`${categories.length} ${categories.length === 1 ? 'category' : 'categories'} total`}
         addLabel="Add Category"
-        onAdd={openModal}
+        onAdd={openAddModal}
       />
 
       <div className="bg-card border border-border rounded-xl p-5">
@@ -118,8 +165,8 @@ export default function Categories() {
                   <td className="py-3 text-sm text-text">{category.product_count}</td>
                   <td className="py-3">
                     <RowActions
-                      onEdit={() => console.log('Edit category', category.id)}
-                      onDelete={() => console.log('Delete category', category.id)}
+                      onEdit={() => openEditModal(category)}
+                      onDelete={() => openDeleteConfirm(category)}
                     />
                   </td>
                 </tr>
@@ -129,7 +176,7 @@ export default function Categories() {
         </table>
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={closeModal} title="Add Category">
+      <Modal isOpen={modalMode !== null} onClose={closeModal} title={modalMode === 'edit' ? 'Edit Category' : 'Add Category'}>
         <form onSubmit={handleSubmit} noValidate>
           <FormField
             label="Category Name"
@@ -147,9 +194,28 @@ export default function Categories() {
             onChange={handleChange}
             placeholder="Optional short description"
           />
-          <FormActions onCancel={closeModal} submitLabel="Add Category" submitting={submitting} submitError={submitError} />
+          <FormActions
+            onCancel={closeModal}
+            submitLabel={modalMode === 'edit' ? 'Save Changes' : 'Add Category'}
+            submitting={submitting}
+            submitError={submitError}
+          />
         </form>
       </Modal>
+
+      <ConfirmDialog
+        isOpen={deleteTarget !== null}
+        onClose={closeDeleteConfirm}
+        onConfirm={confirmDelete}
+        title="Delete Category"
+        message={
+          deleteTarget
+            ? `Delete "${deleteTarget.name}"? Products currently in this category won't be deleted — they'll just show as uncategorized.`
+            : ''
+        }
+        submitting={deleting}
+        error={deleteError}
+      />
     </div>
   );
 }

@@ -35,20 +35,24 @@ exports.create = async (req, res) => {
 
 // PUT /api/suppliers/:id
 exports.update = async (req, res) => {
-  const { name, contact_person, phone, email, address } = req.body;
-  const [[existing]] = await pool.query(`SELECT id FROM suppliers WHERE id = ?`, [req.params.id]);
+  const { id } = req.params;
+  const [[existing]] = await pool.query(`SELECT id FROM suppliers WHERE id = ?`, [id]);
   if (!existing) return res.status(404).json({ success: false, message: 'Supplier not found' });
 
-  await pool.query(
-    `UPDATE suppliers SET
-       name = COALESCE(?, name),
-       contact_person = COALESCE(?, contact_person),
-       phone = COALESCE(?, phone),
-       email = COALESCE(?, email),
-       address = COALESCE(?, address)
-     WHERE id = ?`,
-    [name || null, contact_person ?? null, phone ?? null, email ?? null, address ?? null, req.params.id]
-  );
+  const fields = ['name', 'contact_person', 'phone', 'email', 'address'];
+  const updates = [];
+  const values = [];
+  fields.forEach((f) => {
+    if (req.body[f] !== undefined) {
+      updates.push(`${f} = ?`);
+      values.push(req.body[f]);
+    }
+  });
+  if (updates.length === 0) {
+    return res.status(400).json({ success: false, message: 'No fields to update' });
+  }
+  values.push(id);
+  await pool.query(`UPDATE suppliers SET ${updates.join(', ')} WHERE id = ?`, values);
   res.json({ success: true, message: 'Supplier updated' });
 };
 

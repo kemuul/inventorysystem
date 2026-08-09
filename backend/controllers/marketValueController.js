@@ -32,7 +32,7 @@ exports.getTrend = async (req, res) => {
   const { productId } = req.params;
 
   const [marketRows] = await pool.query(
-    `SELECT market_price, recorded_at FROM market_prices WHERE product_id = ? ORDER BY recorded_at ASC`,
+    `SELECT market_price, source, recorded_at FROM market_prices WHERE product_id = ? ORDER BY recorded_at ASC`,
     [productId]
   );
   const [sellingRows] = await pool.query(

@@ -6,17 +6,24 @@ import Categories from './pages/Categories';
 import Products from './pages/Products';
 import Stocks from './pages/Stocks';
 import Suppliers from './pages/Suppliers';
+import ProfitLoss from './pages/ProfitLoss';
+import Pricing from './pages/Pricing';
+import MarketValue from './pages/MarketValue';
 
 // Maps a Sidebar nav item straight to its page component. Every entry here
 // follows the same shape (api/*.js + useState/useEffect + PageHeader +
 // TableStatusRow) so adding the next module (Users, Settings, Reports...)
-// is just: build the page, add one line here.
+// is just: build the page, add one line here. Keys must match Sidebar's
+// nav item `name` values exactly, including spaces/punctuation.
 const PAGES = {
   Dashboard,
   Categories,
   Products,
   Stocks,
-  Suppliers
+  Suppliers,
+  'Profit & Loss': ProfitLoss,
+  Pricing,
+  'Market Value': MarketValue
 };
 
 export default function App() {

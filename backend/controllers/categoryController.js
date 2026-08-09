@@ -37,14 +37,27 @@ exports.create = async (req, res) => {
 
 // PUT /api/categories/:id
 exports.update = async (req, res) => {
-  const { name, description } = req.body;
-  const [[existing]] = await pool.query(`SELECT id FROM categories WHERE id = ?`, [req.params.id]);
+  const { id } = req.params;
+  const [[existing]] = await pool.query(`SELECT id FROM categories WHERE id = ?`, [id]);
   if (!existing) return res.status(404).json({ success: false, message: 'Category not found' });
 
-  await pool.query(
-    `UPDATE categories SET name = COALESCE(?, name), description = COALESCE(?, description) WHERE id = ?`,
-    [name || null, description ?? null, req.params.id]
-  );
+  // Only touch fields actually present in the request body — this is what
+  // lets someone deliberately clear `description` (send '') without a
+  // COALESCE silently falling back to the old value.
+  const fields = ['name', 'description'];
+  const updates = [];
+  const values = [];
+  fields.forEach((f) => {
+    if (req.body[f] !== undefined) {
+      updates.push(`${f} = ?`);
+      values.push(req.body[f]);
+    }
+  });
+  if (updates.length === 0) {
+    return res.status(400).json({ success: false, message: 'No fields to update' });
+  }
+  values.push(id);
+  await pool.query(`UPDATE categories SET ${updates.join(', ')} WHERE id = ?`, values);
   res.json({ success: true, message: 'Category updated' });
 };
 

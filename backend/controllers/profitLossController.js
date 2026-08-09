@@ -37,9 +37,12 @@ exports.getSummary = async (req, res) => {
   });
 };
 
-// GET /api/profit-loss/trend?range=week|month  (for the dashboard chart)
+// GET /api/profit-loss/trend?range=week|month
+// Same shape the dashboard's ProfitLossChart expects (day/revenue/profit/expenses)
+// so this page can reuse that component for its own trend chart.
 exports.getTrend = async (req, res) => {
   const days = req.query.range === 'month' ? 29 : 6;
+
   const [rows] = await pool.query(
     `SELECT DATE(s.sale_date) AS day,
             SUM(si.quantity * si.unit_price) AS revenue,
@@ -49,7 +52,26 @@ exports.getTrend = async (req, res) => {
      GROUP BY DATE(s.sale_date) ORDER BY day ASC`,
     [days]
   );
-  res.json({ success: true, data: rows });
+
+  const [expenseRows] = await pool.query(
+    `SELECT expense_date AS day, SUM(amount) AS expenses
+     FROM expenses
+     WHERE expense_date >= CURDATE() - INTERVAL ? DAY
+     GROUP BY expense_date`,
+    [days]
+  );
+  const expenseMap = Object.fromEntries(
+    expenseRows.map((r) => [r.day.toISOString().slice(0, 10), r.expenses])
+  );
+
+  const data = rows.map((r) => ({
+    day: r.day.toISOString().slice(0, 10),
+    revenue: r.revenue,
+    profit: r.profit,
+    expenses: expenseMap[r.day.toISOString().slice(0, 10)] || 0
+  }));
+
+  res.json({ success: true, data });
 };
 
 // GET /api/profit-loss/expenses

@@ -2,7 +2,9 @@ import React from 'react';
 
 // iconBg / iconColor let each card use its own accent (blue / purple / green / amber)
 // while the card itself always uses the shared `card` background.
-export default function StatCard({ icon: Icon, iconBg, iconColor, label, value, changePct, footerText, footerLink }) {
+// valueClassName is optional — defaults to the neutral text color, but lets
+// callers (e.g. a Net Profit card that can go negative) color the number itself.
+export default function StatCard({ icon: Icon, iconBg, iconColor, label, value, changePct, footerText, footerLink, valueClassName = 'text-text' }) {
   const isPositive = changePct !== undefined && changePct >= 0;
 
   return (
@@ -14,7 +16,7 @@ export default function StatCard({ icon: Icon, iconBg, iconColor, label, value, 
         <p className="text-sm text-muted">{label}</p>
       </div>
 
-      <p className="text-2xl font-bold text-text mb-1">{value}</p>
+      <p className={`text-2xl font-bold mb-1 ${valueClassName}`}>{value}</p>
 
       {changePct !== undefined ? (
         <p className={`text-xs font-medium ${isPositive ? 'text-profit' : 'text-loss'}`}>
