@@ -5,14 +5,16 @@ import { Package } from 'lucide-react';
 // isn't just gray for every row.
 const SWATCHES = ['#3B82F6', '#22C55E', '#EF4444', '#3B82F6', '#F59E0B'];
 
-export default function TopSellingProducts({ products = [] }) {
+export default function TopSellingProducts({ products = [], onViewAll }) {
   const maxSold = Math.max(...products.map((p) => p.sold), 1);
 
   return (
     <div className="bg-card border border-border rounded-xl p-5">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold text-text">Top Selling Products</h2>
-        <button className="text-sm font-medium text-primary hover:underline">View All</button>
+        <button onClick={onViewAll} className="text-sm font-medium text-primary hover:underline">
+          View All
+        </button>
       </div>
 
       <table className="w-full">

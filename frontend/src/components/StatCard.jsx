@@ -4,7 +4,7 @@ import React from 'react';
 // while the card itself always uses the shared `card` background.
 // valueClassName is optional — defaults to the neutral text color, but lets
 // callers (e.g. a Net Profit card that can go negative) color the number itself.
-export default function StatCard({ icon: Icon, iconBg, iconColor, label, value, changePct, footerText, footerLink, valueClassName = 'text-text' }) {
+export default function StatCard({ icon: Icon, iconBg, iconColor, label, value, changePct, footerText, footerLink, onFooterClick, valueClassName = 'text-text' }) {
   const isPositive = changePct !== undefined && changePct >= 0;
 
   return (
@@ -23,7 +23,9 @@ export default function StatCard({ icon: Icon, iconBg, iconColor, label, value, 
           {isPositive ? '↑' : '↓'} {Math.abs(changePct)}% from yesterday
         </p>
       ) : footerLink ? (
-        <button className="text-xs font-medium text-primary hover:underline">{footerText}</button>
+        <button onClick={onFooterClick} className="text-xs font-medium text-primary hover:underline">
+          {footerText}
+        </button>
       ) : (
         <p className="text-xs text-muted">{footerText}</p>
       )}

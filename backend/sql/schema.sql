@@ -179,6 +179,24 @@ CREATE TABLE losses (
   INDEX idx_losses_date (loss_date)
 );
 
+-- ------------------------------------------------------------
+-- 12. SETTINGS  (single-row store configuration, powers the Settings page)
+-- ------------------------------------------------------------
+CREATE TABLE settings (
+  id                        INT PRIMARY KEY DEFAULT 1,
+  store_name                VARCHAR(150) NOT NULL DEFAULT 'My Store',
+  contact_email             VARCHAR(150),
+  phone                     VARCHAR(30),
+  address                   VARCHAR(255),
+  currency_symbol           VARCHAR(5) NOT NULL DEFAULT '₱',
+  default_reorder_level     INT NOT NULL DEFAULT 10,
+  low_stock_alerts_enabled  TINYINT(1) NOT NULL DEFAULT 1,
+  updated_at                TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Seed the single settings row so the app always has something to read/update.
+INSERT INTO settings (id, store_name) VALUES (1, 'InventoryPro Store');
+
 -- ============================================================
 -- ENTITY RELATIONSHIP SUMMARY
 -- ============================================================
@@ -191,3 +209,4 @@ CREATE TABLE losses (
 -- products   1---N losses            (damaged/expired/theft)
 -- users      1---N stock_movements / sales / price_history (who did what)
 -- expenses stands alone, aggregated with sales+losses for P&L
+-- settings is a single fixed row (id=1), read/written by the Settings page

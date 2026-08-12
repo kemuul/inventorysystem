@@ -15,6 +15,10 @@ const pricingRoutes = require('./routes/pricingRoutes');
 const marketValueRoutes = require('./routes/marketValueRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const supplierRoutes = require('./routes/supplierRoutes');
+const reportsRoutes = require('./routes/reportsRoutes');
+const userRoutes = require('./routes/userRoutes');
+const settingsRoutes = require('./routes/settingsRoutes');
+const searchRoutes = require('./routes/searchRoutes');
 
 const app = express();
 
@@ -35,6 +39,10 @@ app.use('/api/pricing', pricingRoutes);
 app.use('/api/market-value', marketValueRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/suppliers', supplierRoutes);
+app.use('/api/reports', reportsRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/search', searchRoutes);
 
 // ---- 404 fallback ----
 app.use((req, res) => res.status(404).json({ success: false, message: 'Route not found' }));

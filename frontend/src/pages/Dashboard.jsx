@@ -42,7 +42,7 @@ const DEMO = {
   ]
 };
 
-export default function Dashboard() {
+export default function Dashboard({ onNavigate }) {
   const [summary, setSummary] = useState(DEMO.summary);
   const [trend, setTrend] = useState(DEMO.trend);
   const [topSelling, setTopSelling] = useState(DEMO.topSelling);
@@ -135,6 +135,7 @@ export default function Dashboard() {
           value={summary.lowStockItems}
           footerText="View items"
           footerLink
+          onFooterClick={() => onNavigate?.('Stocks')}
         />
       </div>
 
@@ -148,8 +149,8 @@ export default function Dashboard() {
 
       {/* Tables */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <TopSellingProducts products={topSelling} />
-        <LowStockAlerts items={lowStock} />
+        <TopSellingProducts products={topSelling} onViewAll={() => onNavigate?.('Products')} />
+        <LowStockAlerts items={lowStock} onViewAll={() => onNavigate?.('Stocks')} />
       </div>
     </div>
   );

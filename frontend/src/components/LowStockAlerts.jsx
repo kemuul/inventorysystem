@@ -1,12 +1,14 @@
 import React from 'react';
 import { Package } from 'lucide-react';
 
-export default function LowStockAlerts({ items = [] }) {
+export default function LowStockAlerts({ items = [], onViewAll }) {
   return (
     <div className="bg-card border border-border rounded-xl p-5">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold text-text">Low Stock Alerts</h2>
-        <button className="text-sm font-medium text-primary hover:underline">View All</button>
+        <button onClick={onViewAll} className="text-sm font-medium text-primary hover:underline">
+          View All
+        </button>
       </div>
 
       <table className="w-full">
