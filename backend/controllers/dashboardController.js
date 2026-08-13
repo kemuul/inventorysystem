@@ -7,27 +7,39 @@ function percentChange(current, previous) {
   return Math.round(((current - previous) / previous) * 1000) / 10; // 1 decimal
 }
 
-// GET /api/dashboard/summary
-// Total sales, revenue, profit today (+ % change vs yesterday) and low stock count
+// GET /api/dashboard/summary?period=today|week|month
+// Sales/revenue/profit for the selected period, compared against the
+// equivalent prior period (today vs yesterday, this week vs last week,
+// this month vs last month) so the % change stays meaningful at any period.
 exports.getSummary = async (req, res) => {
-  const [[todaySales]] = await pool.query(
+  const period = req.query.period === 'week' || req.query.period === 'month' ? req.query.period : 'today';
+  const days = period === 'week' ? 7 : period === 'month' ? 30 : 1;
+
+  // Current period: the last `days` days including today.
+  const [[current]] = await pool.query(
     `SELECT COUNT(*) AS count, COALESCE(SUM(total_amount),0) AS revenue
-     FROM sales WHERE DATE(sale_date) = CURDATE()`
+     FROM sales WHERE sale_date >= CURDATE() - INTERVAL ? DAY`,
+    [days - 1]
   );
-  const [[yesterdaySales]] = await pool.query(
-    `SELECT COUNT(*) AS count, COALESCE(SUM(total_amount),0) AS revenue
-     FROM sales WHERE DATE(sale_date) = CURDATE() - INTERVAL 1 DAY`
+  // Previous period: the same number of days immediately before the current period.
+  const [[previous]] = await pool.query(
+    `SELECT COALESCE(SUM(total_amount),0) AS revenue
+     FROM sales
+     WHERE sale_date >= CURDATE() - INTERVAL ? DAY AND sale_date < CURDATE() - INTERVAL ? DAY`,
+    [days * 2 - 1, days - 1]
   );
 
-  const [[todayProfit]] = await pool.query(
+  const [[currentProfit]] = await pool.query(
     `SELECT COALESCE(SUM((si.unit_price - si.unit_cost) * si.quantity),0) AS profit
      FROM sale_items si JOIN sales s ON s.id = si.sale_id
-     WHERE DATE(s.sale_date) = CURDATE()`
+     WHERE s.sale_date >= CURDATE() - INTERVAL ? DAY`,
+    [days - 1]
   );
-  const [[yesterdayProfit]] = await pool.query(
+  const [[previousProfit]] = await pool.query(
     `SELECT COALESCE(SUM((si.unit_price - si.unit_cost) * si.quantity),0) AS profit
      FROM sale_items si JOIN sales s ON s.id = si.sale_id
-     WHERE DATE(s.sale_date) = CURDATE() - INTERVAL 1 DAY`
+     WHERE s.sale_date >= CURDATE() - INTERVAL ? DAY AND s.sale_date < CURDATE() - INTERVAL ? DAY`,
+    [days * 2 - 1, days - 1]
   );
 
   const [[lowStock]] = await pool.query(
@@ -38,17 +50,19 @@ exports.getSummary = async (req, res) => {
   // for now (they're the same figure in a simple retail flow). They're kept as
   // separate fields so refunds/discounts can be layered in later — e.g. Sales
   // = gross order value, Revenue = amount actually collected — without a
-  // breaking API change on the frontend.
+  // breaking API change on the frontend. Field names keep the "Today" suffix
+  // for backwards compatibility even though `period` can now widen the window.
   res.json({
     success: true,
     data: {
-      totalSalesToday: todaySales.revenue,
-      totalSalesChangePct: percentChange(todaySales.revenue, yesterdaySales.revenue),
-      totalTransactionsToday: todaySales.count,
-      totalRevenueToday: todaySales.revenue,
-      totalRevenueChangePct: percentChange(todaySales.revenue, yesterdaySales.revenue),
-      totalProfitToday: todayProfit.profit,
-      totalProfitChangePct: percentChange(todayProfit.profit, yesterdayProfit.profit),
+      period,
+      totalSalesToday: current.revenue,
+      totalSalesChangePct: percentChange(current.revenue, previous.revenue),
+      totalTransactionsToday: current.count,
+      totalRevenueToday: current.revenue,
+      totalRevenueChangePct: percentChange(current.revenue, previous.revenue),
+      totalProfitToday: currentProfit.profit,
+      totalProfitChangePct: percentChange(currentProfit.profit, previousProfit.profit),
       lowStockItems: lowStock.count
     }
   });
